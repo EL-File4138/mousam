@@ -15,6 +15,8 @@ from .windowAbout import show_about_window
 from .windowPreferences import WeatherPreferences
 from .shortcutsDialog import ShortcutsDialog
 from .windowLocations import WeatherLocations
+from .CORE_currentLocation import CurrentLocationController
+from .CORE_locationModel import LocationModel
 from .CORE_Logging import get_logger
 
 logger = get_logger("ui")
@@ -43,12 +45,16 @@ class WeatherMainWindow(Adw.ApplicationWindow):
 
         # State Tracking
         self.added_cities = settings.added_cities
+        self.location_model = LocationModel(settings)
+        self.current_location_controller = None
         self._needs_render = False
 
         # --- UI Construction ---
         self._setup_actions()
         self._setup_ui()
         self._use_dynamic_bg()
+
+        self._sync_automatic_location_controller()
 
         # Initial Data Load
         self._start_data_refresh(is_initial=True)
@@ -61,6 +67,10 @@ class WeatherMainWindow(Adw.ApplicationWindow):
         settings.connect(
             "changed::auto-refresh-interval",
             lambda *_: self.get_application().auto_refresh.setup(),
+        )
+        settings.connect(
+            "changed::automatic-location",
+            lambda *_: self._sync_automatic_location_controller(),
         )
         settings.connect(
             "changed::debug-mode",
@@ -187,7 +197,7 @@ class WeatherMainWindow(Adw.ApplicationWindow):
             return
 
 
-        if not self.added_cities:
+        if self.location_model.get_selected_location() is None:
             self._update_view_state("welcome")
             return
 
@@ -198,7 +208,26 @@ class WeatherMainWindow(Adw.ApplicationWindow):
             on_error=lambda err: self._update_view_state("error_api", err)
         )
 
-    # _worker_fetch_data moved to utils.fetch_all_weather_data_async
+    def _on_refresh_complete(self, result):
+        if result.success:
+            self._on_data_fetch_success()
+            return False
+
+        if result.status == "no-internet":
+            self._update_view_state("error_no_internet")
+            return False
+
+        if result.status == "no-location":
+            self._update_view_state("welcome")
+            return False
+
+        print(f"Error fetching data: {result.error}")
+        self._update_view_state("error_api")
+        return False
+
+    def _on_automatic_location_changed(self, _location):
+        if settings.automatic_location and not settings.selected_city:
+            self._start_data_refresh()
 
     def _on_weather_manager_ready(self, *args):
         """Called when data ready state changes."""
@@ -441,6 +470,18 @@ class WeatherMainWindow(Adw.ApplicationWindow):
         # Clear timezone cache (will be repopulated during fetch)
         local_time_data.clear()
 
+
+    def _sync_automatic_location_controller(self):
+        if settings.automatic_location and self.current_location_controller is None:
+            self.current_location_controller = CurrentLocationController(
+                settings, self._on_automatic_location_changed
+            )
+            self.current_location_controller.start()
+            return
+
+        if not settings.automatic_location:
+            settings.current_location = ""
+            self.current_location_controller = None
 
     def _save_window_state(self, window):
 

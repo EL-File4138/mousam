@@ -7,6 +7,7 @@
     "finish-args": [
         "--share=network",
         "--share=ipc",
+        "--system-talk-name=org.freedesktop.GeoClue2",
         "--socket=fallback-x11",
         "--device=dri",
         "--socket=wayland"
