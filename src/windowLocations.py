@@ -5,7 +5,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw
+from gi.repository import Gtk, Adw, GLib
 
 from .CORE_Helpers import create_toast
 from .API_FindCity import find_city
@@ -131,13 +131,16 @@ class WeatherLocations(Adw.PreferencesWindow):
         self.location_model = LocationModel(settings)
         self.row_map = {}  # Track rows to prevent full UI rebuilds
         self._settings_handlers = []
+        self._header_add_button = None
 
         self.set_title(_("Locations"))
         self.set_transient_for(application)
         self.set_default_size(550, 450)
+        self.set_search_enabled(True)
 
         self._build_ui()
         self._refresh_list()
+        GLib.idle_add(self._install_header_add_button)
         for key in ("automatic-location", "current-location", "selected-city", "added-cities"):
             handler_id = settings.settings.connect(
                 f"changed::{key}",
@@ -147,15 +150,7 @@ class WeatherLocations(Adw.PreferencesWindow):
 
     def _build_ui(self):
         page = Adw.PreferencesPage()
-        self.location_grp = Adw.PreferencesGroup(title=_("Saved Locations"))
-
-        add_btn = Gtk.Button(label=_("Add"), icon_name="list-add-symbolic")
-        add_btn.connect(
-            "clicked",
-            lambda _: CitySearchDialog(self, self._handle_city_added).present(),
-        )
-
-        self.location_grp.set_header_suffix(add_btn)
+        self.location_grp = Adw.PreferencesGroup()
         page.add(self.location_grp)
         self.add(page)
 
@@ -281,3 +276,39 @@ class WeatherLocations(Adw.PreferencesWindow):
             settings.settings.disconnect(handler_id)
         self._settings_handlers.clear()
         super().destroy()
+
+    def _install_header_add_button(self):
+        if self._header_add_button is not None:
+            return False
+
+        header_bar = self._find_header_bar(self)
+        if header_bar is None:
+            return True
+
+        add_btn = Gtk.Button(icon_name="list-add-symbolic", has_frame=False)
+        add_btn.add_css_class("flat")
+        add_btn.add_css_class("image-button")
+        add_btn.set_valign(Gtk.Align.CENTER)
+        add_btn.connect(
+            "clicked",
+            lambda *_: CitySearchDialog(self, self._handle_city_added).present(),
+        )
+        header_bar.pack_start(add_btn)
+        self._header_add_button = add_btn
+        return False
+
+    def _find_header_bar(self, widget):
+        if isinstance(widget, Adw.HeaderBar):
+            return widget
+
+        if not hasattr(widget, "get_first_child"):
+            return None
+
+        child = widget.get_first_child()
+        while child is not None:
+            result = self._find_header_bar(child)
+            if result is not None:
+                return result
+            child = child.get_next_sibling()
+
+        return None

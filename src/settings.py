@@ -163,6 +163,14 @@ class Settings:
     def last_refresh_status(self, value):
         self.settings.set_string("last-refresh-status", value)
 
+    @property
+    def shell_integration_enabled(self):
+        return self.settings.get_boolean("shell-integration-enabled")
+
+    @shell_integration_enabled.setter
+    def shell_integration_enabled(self, value):
+        self.settings.set_boolean("shell-integration-enabled", value)
+
 
 def get_settings():
     return Settings()

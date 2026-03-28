@@ -59,6 +59,7 @@ class ShellIntegrationExporter:
             "automatic-location",
             "current-location",
             "added-cities",
+            "shell-integration-enabled",
             "selected-city",
         ):
             handler_id = self.settings.settings.connect(
@@ -93,6 +94,9 @@ class ShellIntegrationExporter:
         return None
 
     def _build_location_variants(self):
+        if not self.settings.shell_integration_enabled:
+            return []
+
         variants = []
         for location in self._ordered_manual_locations():
             serialized = self._serialize_location(location)
@@ -120,6 +124,8 @@ class ShellIntegrationExporter:
 
     def _selected_is_automatic(self) -> bool:
         return (
+            self.settings.shell_integration_enabled
+            and
             self.settings.automatic_location
             and self.settings.selected_city in ("", AUTO_LOCATION_ID)
             and self.location_model.get_automatic_location() is not None
