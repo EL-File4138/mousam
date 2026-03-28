@@ -1,5 +1,4 @@
 import gi
-import threading
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -9,12 +8,14 @@ from gi.repository import Gtk, Adw, Gio, GLib
 from gettext import gettext as _, pgettext as C_
 
 # Module imports
-from .utils import create_toast, check_internet_connection, get_time_difference
+from .utils import create_toast
 from .constants import bg_css
 from .windowAbout import AboutWindow
 from .windowPreferences import WeatherPreferences
 from .shortcutsDialog import ShortcutsDialog
 from .windowLocations import WeatherLocations
+from .CORE_currentLocation import CurrentLocationController
+from .CORE_locationModel import LocationModel
 
 # Frontend Components
 from .UI_CurrentCond import CurrentCondition
@@ -25,12 +26,7 @@ from .UI_CardDayNight import CardDayNight
 from .UI_CardAirPollution import CardAirPollution
 
 from .config import settings
-from .CORE_weatherData import (
-    fetch_current_weather,
-    fetch_hourly_forecast,
-    fetch_daily_forecast,
-    fetch_current_air_pollution,
-)
+from .CORE_refreshService import WeatherRefreshService
 
 
 class WeatherMainWindow(Adw.ApplicationWindow):
@@ -45,11 +41,16 @@ class WeatherMainWindow(Adw.ApplicationWindow):
         # State Tracking
         self.added_cities= settings.added_cities
         self._auto_refresh_timer_id = None
+        self.location_model = LocationModel(settings)
+        self.refresh_service = WeatherRefreshService(settings)
+        self.current_location_controller = None
 
         # --- UI Construction ---
         self._setup_actions()
         self._setup_ui()
         self._use_dynamic_bg()
+
+        self._sync_automatic_location_controller()
 
         # Initial Data Load
         self._start_data_refresh(is_initial=True)
@@ -59,6 +60,14 @@ class WeatherMainWindow(Adw.ApplicationWindow):
         settings.settings.connect(
             "changed::auto-refresh-interval",
             lambda *_: self._setup_auto_refresh(),
+        )
+        settings.settings.connect(
+            "changed::automatic-location",
+            lambda *_: self._sync_automatic_location_controller(),
+        )
+        settings.settings.connect(
+            "changed::selected-city",
+            lambda *_: self._start_data_refresh(),
         )
 
     def _setup_ui(self):
@@ -147,61 +156,35 @@ class WeatherMainWindow(Adw.ApplicationWindow):
             self._update_view_state("welcome")
             return
 
-        if not check_internet_connection():
-            self._update_view_state("error_no_internet")
-            return
-
-
-        if not self.added_cities:
+        if self.location_model.get_selected_location() is None:
             self._update_view_state("welcome")
             return
 
 
         self._update_view_state("loader")
 
-        # Pass coordinates to thread to ensure thread-safety against config changes
-        city_coords = settings.selected_city
-        threading.Thread(
-            target=self._worker_fetch_data, args=(city_coords,), daemon=True
-        ).start()
+        self.refresh_service.refresh_async(on_complete=self._on_refresh_complete)
 
-    def _worker_fetch_data(self, city_coords):
-        """
-        Runs network requests.
-        Because your fetch_ functions update shared state in weatherData.py,
-        we simply run them sequentially here.
-        """
-        try:
-            # cwd : current_weather_data
-            # cwt : current_weather_thread
-            cwd = threading.Thread(target=fetch_current_weather, name="cwt")
-            cwd.start()
-            cwd.join()
+    def _on_refresh_complete(self, result):
+        if result.success:
+            self._on_data_fetch_success()
+            return False
 
-            hfd = threading.Thread(target=fetch_hourly_forecast, name="hft")
-            hfd.start()
+        if result.status == "no-internet":
+            self._update_view_state("error_no_internet")
+            return False
 
-            dfd = threading.Thread(target=fetch_daily_forecast, name="dft")
-            dfd.start()
+        if result.status == "no-location":
+            self._update_view_state("welcome")
+            return False
 
-            apd = threading.Thread(target=fetch_current_air_pollution, name="apt")
-            apd.start()
+        print(f"Error fetching data: {result.error}")
+        self._update_view_state("error_api")
+        return False
 
-            local_time = threading.Thread(
-                target=get_time_difference, args=("", True), name="local_time"
-            )
-            local_time.start()
-
-            hfd.join()
-            dfd.join()
-            apd.join()
-            local_time.join()
-            # Signal the main thread to read the updated data
-            GLib.idle_add(self._on_data_fetch_success)
-
-        except Exception as e:
-            print(f"Error fetching data: {e}")
-            GLib.idle_add(self._update_view_state, "error_api")
+    def _on_automatic_location_changed(self, _location):
+        if settings.automatic_location and not settings.selected_city:
+            self._start_data_refresh()
 
     def _on_data_fetch_success(self):
         """Called on Main Thread after the worker has populated weatherData."""
@@ -391,6 +374,18 @@ class WeatherMainWindow(Adw.ApplicationWindow):
     def _on_auto_refresh_tick(self):
         self._start_data_refresh()
         return GLib.SOURCE_CONTINUE
+
+    def _sync_automatic_location_controller(self):
+        if settings.automatic_location and self.current_location_controller is None:
+            self.current_location_controller = CurrentLocationController(
+                settings, self._on_automatic_location_changed
+            )
+            self.current_location_controller.start()
+            return
+
+        if not settings.automatic_location:
+            settings.current_location = ""
+            self.current_location_controller = None
 
     def _save_window_state(self, window):
         if self._auto_refresh_timer_id is not None:

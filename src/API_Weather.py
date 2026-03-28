@@ -72,6 +72,12 @@ class Weather:
             hourly_fields = ",".join(kwargs.get("hourly"))
             url = url + f"&hourly={hourly_fields}" + extend_url
 
+        if "start_date" in kwargs:
+            url = url + f"&start_date={kwargs.get('start_date')}"
+
+        if "end_date" in kwargs:
+            url = url + f"&end_date={kwargs.get('end_date')}"
+
         try:
             url = url + "&timeformat=unixtime"
             response = requests.get(url)
@@ -105,8 +111,13 @@ class Weather:
 
         today = datetime.datetime.today().date()
         tomorrow = today + datetime.timedelta(days=1)
+        day_after_tomorrow = today + datetime.timedelta(days=2)
         return self.forecast_hourly(
-            lat, lon, hourly=hourly_args, start_date=today, end_date=tomorrow
+            lat,
+            lon,
+            hourly=hourly_args,
+            start_date=today,
+            end_date=day_after_tomorrow,
         )
 
     # Forecast daily ====================================================
