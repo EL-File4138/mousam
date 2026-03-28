@@ -22,10 +22,11 @@ import sys
 import gi
 from .mousam import WeatherMainWindow
 from .config import settings
+from .shell import BUS_PATH, GNOME_WEATHER_BUS_PATH, ShellIntegrationExporter
 
 gi.require_version('Adw', '1')
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gtk, Gio, Adw, Gdk
+from gi.repository import Gtk, Gio, Adw, Gdk, GLib
 
 
 class WeatherApplication(Adw.Application):
@@ -36,6 +37,9 @@ class WeatherApplication(Adw.Application):
                          flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
         self.create_action('quit', lambda *_: self.quit(), ['<primary>q'])
         self.main_window = None
+        self.shell_exporter = ShellIntegrationExporter(settings)
+        self.shell_compat_exporter = ShellIntegrationExporter(settings)
+        self.compat_name_owned = False
 
         self.set_accels_for_action("win.preferences", ['<primary>comma'])
         self.set_accels_for_action("win.shortcuts", ['<primary>question'])
@@ -75,6 +79,42 @@ class WeatherApplication(Adw.Application):
         self.add_action(action)
         if shortcuts:
             self.set_accels_for_action(f"app.{name}", shortcuts)
+
+    def do_dbus_register(self, connection, object_path):
+        registered = Adw.Application.do_dbus_register(self, connection, object_path)
+        self.shell_exporter.export(connection, BUS_PATH)
+        self.shell_compat_exporter.export(connection, GNOME_WEATHER_BUS_PATH)
+        result = connection.call_sync(
+            'org.freedesktop.DBus',
+            '/org/freedesktop/DBus',
+            'org.freedesktop.DBus',
+            'RequestName',
+            GLib.Variant('(su)', ('org.gnome.Weather', 0)),
+            GLib.VariantType('(u)'),
+            Gio.DBusCallFlags.NONE,
+            -1,
+            None,
+        )
+        self.compat_name_owned = result is not None and result.unpack()[0] in (1, 4)
+        return registered
+
+    def do_dbus_unregister(self, connection, object_path):
+        self.shell_exporter.unexport()
+        self.shell_compat_exporter.unexport()
+        if self.compat_name_owned:
+            connection.call_sync(
+                'org.freedesktop.DBus',
+                '/org/freedesktop/DBus',
+                'org.freedesktop.DBus',
+                'ReleaseName',
+                GLib.Variant('(s)', ('org.gnome.Weather',)),
+                GLib.VariantType('(u)'),
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+            )
+            self.compat_name_owned = False
+        Adw.Application.do_dbus_unregister(self, connection, object_path)
 
 
 def main(version):

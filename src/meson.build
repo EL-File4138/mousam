@@ -26,11 +26,25 @@ configure_file(
   install_mode: 'rwxr-xr-x'
 )
 
+configure_file(
+  input: 'background_service.in',
+  output: 'io.github.amit9838.mousam.BackgroundService',
+  configuration: conf,
+  install: true,
+  install_dir: get_option('bindir'),
+  install_mode: 'rwxr-xr-x'
+)
+
 mousam_sources = [
+  'background_main.py',
   'main.py',
   'mousam.py',
   'CORE_Models.py',
+  'CORE_currentLocation.py',
+  'CORE_locationModel.py',
+  'CORE_refreshService.py',
   'CORE_weatherData.py',
+  'shell.py',
 
   'API_AirPollution.py',
   'API_FindCity.py',

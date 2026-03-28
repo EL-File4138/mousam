@@ -1,0 +1,9 @@
+<node>
+
+  <interface name="org.gnome.Shell.WeatherIntegration">
+
+  <property name="AutomaticLocation" type="b" access="read"/>
+  <property name="Locations" type="av" access="read"/>
+
+  </interface>
+</node>
