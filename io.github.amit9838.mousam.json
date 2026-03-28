@@ -26,9 +26,57 @@
     "modules" : [
         "data/dependencies/python3-requests.json",
         {
+            "name" : "geocode-glib",
+            "config-opts" : [
+                "-Denable-installed-tests=false",
+                "-Denable-gtk-doc=false",
+                "-Dsoup2=false"
+            ],
+            "buildsystem" : "meson",
+            "sources" : [
+                {
+                    "type" : "git",
+                    "url" : "https://gitlab.gnome.org/GNOME/geocode-glib.git",
+                    "tag" : "3.26.4"
+                }
+            ]
+        },
+        {
+            "name" : "libgweather",
+            "config-opts" : [
+                "-Denable_vala=false",
+                "-Dtests=false",
+                "-Dgtk_doc=false"
+            ],
+            "buildsystem" : "meson",
+            "modules": [
+                {
+                    "name" : "gweather-locations",
+                    "buildsystem" : "meson",
+                    "sources" : [
+                        {
+                            "type" : "git",
+                            "url" : "https://gitlab.gnome.org/GNOME/gweather-locations.git",
+                            "tag" : "2026.1"
+                        }
+                    ]
+                }
+            ],
+            "sources" : [
+                {
+                    "type" : "git",
+                    "url" : "https://gitlab.gnome.org/GNOME/libgweather.git",
+                    "tag" : "4.5.0"
+                }
+            ]
+        },
+        {
             "name" : "mousam",
             "builddir" : true,
             "buildsystem" : "meson",
+            "config-opts" : [
+                "-Dflatpak=true"
+            ],
             "sources" : [
                 {
                     "type" : "dir",

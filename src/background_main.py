@@ -97,5 +97,8 @@ class WeatherBackgroundService(Gio.Application):
 
 
 def main(_version=None):
+    if settings.IS_FLATPAK:
+        return 0
+
     app = WeatherBackgroundService()
     return app.run(sys.argv)

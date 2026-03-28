@@ -205,7 +205,9 @@ class WeatherPreferences(Adw.PreferencesWindow):
             orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER
         )
         self.shell_integration_switch = Gtk.Switch()
-        self.shell_integration_switch.set_active(settings.shell_integration_enabled)
+        self.shell_integration_switch.set_active(
+            settings.shell_integration_enabled and not settings.IS_FLATPAK
+        )
         self.shell_integration_switch.connect(
             "state-set", self._on_shell_integration_changed
         )
@@ -223,7 +225,9 @@ class WeatherPreferences(Adw.PreferencesWindow):
             orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER
         )
         self.background_refresh_switch = Gtk.Switch()
-        self.background_refresh_switch.set_active(settings.background_refresh_enabled)
+        self.background_refresh_switch.set_active(
+            settings.background_refresh_enabled and not settings.IS_FLATPAK
+        )
         self.background_refresh_switch.connect(
             "state-set", self._on_background_refresh_changed
         )
@@ -232,6 +236,19 @@ class WeatherPreferences(Adw.PreferencesWindow):
         self.background_refresh_row = background_refresh_row
         self.auto_refresh_group.add(background_refresh_row)
         self._update_background_refresh_sensitivity()
+
+        if settings.IS_FLATPAK:
+            shell_integration_row.set_subtitle(
+                _("Unavailable in Flatpak builds")
+            )
+            shell_integration_row.set_sensitive(False)
+            self.shell_integration_switch.set_sensitive(False)
+
+            self.background_refresh_row.set_subtitle(
+                _("Unavailable in Flatpak builds")
+            )
+            self.background_refresh_row.set_sensitive(False)
+            self.background_refresh_switch.set_sensitive(False)
 
         # =============== Data Management Group ===============
         self.data_group = Adw.PreferencesGroup.new()
@@ -319,16 +336,27 @@ class WeatherPreferences(Adw.PreferencesWindow):
         self.add_toast(create_toast(message, 1))
 
     def _on_background_refresh_changed(self, _widget, state):
+        if settings.IS_FLATPAK:
+            return True
+
         settings.background_refresh_enabled = state
         message = _("Background refresh enabled") if state else _("Background refresh disabled")
         self.add_toast(create_toast(message, 1))
 
     def _on_shell_integration_changed(self, _widget, state):
+        if settings.IS_FLATPAK:
+            return True
+
         settings.shell_integration_enabled = state
         message = _("GNOME Shell integration enabled") if state else _("GNOME Shell integration disabled")
         self.add_toast(create_toast(message, 1))
 
     def _update_background_refresh_sensitivity(self):
+        if settings.IS_FLATPAK:
+            self.background_refresh_row.set_sensitive(False)
+            self.background_refresh_switch.set_sensitive(False)
+            return
+
         enabled = settings.auto_refresh_interval > 0
         self.background_refresh_row.set_sensitive(enabled)
         self.background_refresh_switch.set_sensitive(enabled)
@@ -364,8 +392,12 @@ class WeatherPreferences(Adw.PreferencesWindow):
         self.use_inch_switch.set_active(settings.is_using_inch_for_prec)
         self.auto_refresh_row.set_selected(0)
         self.automatic_location_switch.set_active(settings.automatic_location)
-        self.shell_integration_switch.set_active(settings.shell_integration_enabled)
-        self.background_refresh_switch.set_active(settings.background_refresh_enabled)
+        self.shell_integration_switch.set_active(
+            settings.shell_integration_enabled and not settings.IS_FLATPAK
+        )
+        self.background_refresh_switch.set_active(
+            settings.background_refresh_enabled and not settings.IS_FLATPAK
+        )
         self._update_background_refresh_sensitivity()
 
         if settings.unit == "metric":

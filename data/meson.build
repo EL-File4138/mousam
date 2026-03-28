@@ -1,6 +1,7 @@
 data_conf = configuration_data()
 data_conf.set('APP_ID', 'io.github.amit9838.mousam')
 data_conf.set('BINDIR', join_paths(get_option('prefix'), get_option('bindir')))
+is_flatpak = get_option('flatpak')
 
 desktop_file = i18n.merge_file(
         input: 'io.github.amit9838.mousam.desktop.in',
@@ -11,19 +12,23 @@ desktop_file = i18n.merge_file(
   install_dir: join_paths(get_option('datadir'), 'applications')
 )
 
-desktop_alias_file = i18n.merge_file(
-        input: 'org.gnome.Weather.desktop.in',
-       output: 'org.gnome.Weather.desktop',
-         type: 'desktop',
-       po_dir: '../po',
-      install: true,
-  install_dir: join_paths(get_option('datadir'), 'applications')
-)
+if not is_flatpak
+  desktop_alias_file = i18n.merge_file(
+          input: 'org.gnome.Weather.desktop.in',
+         output: 'org.gnome.Weather.desktop',
+           type: 'desktop',
+         po_dir: '../po',
+        install: true,
+    install_dir: join_paths(get_option('datadir'), 'applications')
+  )
+endif
 
 desktop_utils = find_program('desktop-file-validate', required: false)
 if desktop_utils.found()
   test('Validate desktop file', desktop_utils, args: [desktop_file])
-  test('Validate desktop alias file', desktop_utils, args: [desktop_alias_file])
+  if not is_flatpak
+    test('Validate desktop alias file', desktop_utils, args: [desktop_alias_file])
+  endif
 endif
 
 appstream_file = i18n.merge_file(
@@ -57,21 +62,25 @@ configure_file(
   install_dir: join_paths(get_option('datadir'), 'dbus-1/services'),
 )
 
-configure_file(
-  input: 'org.gnome.Weather.service.in',
-  output: 'org.gnome.Weather.service',
-  configuration: data_conf,
-  install: true,
-  install_dir: join_paths(get_option('datadir'), 'dbus-1/services'),
-)
+if not is_flatpak
+  configure_file(
+    input: 'org.gnome.Weather.service.in',
+    output: 'org.gnome.Weather.service',
+    configuration: data_conf,
+    install: true,
+    install_dir: join_paths(get_option('datadir'), 'dbus-1/services'),
+  )
+endif
 
-configure_file(
-  input: 'io.github.amit9838.mousam.BackgroundService.service.in',
-  output: 'io.github.amit9838.mousam.BackgroundService.service',
-  configuration: data_conf,
-  install: true,
-  install_dir: join_paths(get_option('datadir'), 'dbus-1/services'),
-)
+if not is_flatpak
+  configure_file(
+    input: 'io.github.amit9838.mousam.BackgroundService.service.in',
+    output: 'io.github.amit9838.mousam.BackgroundService.service',
+    configuration: data_conf,
+    install: true,
+    install_dir: join_paths(get_option('datadir'), 'dbus-1/services'),
+  )
+endif
 
 compile_schemas = find_program('glib-compile-schemas', required: false)
 if compile_schemas.found()
