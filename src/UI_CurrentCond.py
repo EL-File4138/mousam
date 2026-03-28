@@ -2,7 +2,7 @@ import gi
 from gi.repository import Gtk
 from .CORE_Icons import icons, condition
 from .settings import settings
-from .CORE_Helpers import JsonProcessor
+from .CORE_locationModel import LocationModel
 from gettext import gettext as _, pgettext as C_
 
 
@@ -71,13 +71,12 @@ class CurrentCondition(Gtk.Grid):
         )
         self.attach(box_right, 1, 0, 1, 1)
 
-        city_list_json = JsonProcessor.str_list_to_json(settings.added_cities)
-
-        self.selected_city_index = self._get_selected_city(
-            settings.selected_city, city_list_json
+        selected_location = LocationModel(settings).get_selected_location()
+        city_info = (
+            selected_location.to_dict()
+            if selected_location is not None
+            else {"name": "", "country": ""}
         )
-
-        city_info = city_list_json[self.selected_city_index]
 
         box_label = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_bottom=10)
         box_right.append(box_label)
@@ -109,9 +108,3 @@ class CurrentCondition(Gtk.Grid):
         # visibility_label.set_markup(markup_text)
         # visibility_label.set_css_classes(["text-4", "bold-3"])
         # box_right.append(visibility_label)
-
-    def _get_selected_city(self, selected_city, cities):
-        for i, city in enumerate(cities):
-            if selected_city == f"{city.get("latitude")},{city.get("longitude")}":
-                return i
-        return 0

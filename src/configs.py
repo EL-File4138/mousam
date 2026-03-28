@@ -8,6 +8,7 @@ VERSION = "2.0.2"
 TIMEOUT = 15
 INTERNET_CACHE_TTL = 120
 DEFAULT_TIMEZONE = "UTC"
+GEONAMES_USERNAME = "mousam"
 
 # Domain to check internet connectivity as fallback
 DOMAINS = {

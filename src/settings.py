@@ -123,6 +123,46 @@ class Settings:
     def debug_mode(self, value):
         self.settings.set_boolean("debug-mode", value)
 
+    @property
+    def automatic_location(self):
+        return self.settings.get_boolean("automatic-location")
+
+    @automatic_location.setter
+    def automatic_location(self, value):
+        self.settings.set_boolean("automatic-location", value)
+
+    @property
+    def current_location(self):
+        return self.settings.get_string("current-location")
+
+    @current_location.setter
+    def current_location(self, value):
+        self.settings.set_string("current-location", value)
+
+    @property
+    def background_refresh_enabled(self):
+        return self.settings.get_boolean("background-refresh-enabled")
+
+    @background_refresh_enabled.setter
+    def background_refresh_enabled(self, value):
+        self.settings.set_boolean("background-refresh-enabled", value)
+
+    @property
+    def last_refresh_timestamp(self):
+        return self.settings.get_int64("last-refresh-timestamp")
+
+    @last_refresh_timestamp.setter
+    def last_refresh_timestamp(self, value):
+        self.settings.set_int64("last-refresh-timestamp", value)
+
+    @property
+    def last_refresh_status(self):
+        return self.settings.get_string("last-refresh-status")
+
+    @last_refresh_status.setter
+    def last_refresh_status(self, value):
+        self.settings.set_string("last-refresh-status", value)
+
 
 def get_settings():
     return Settings()
