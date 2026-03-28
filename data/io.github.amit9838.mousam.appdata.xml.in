@@ -106,6 +106,22 @@
         </ul>
       </description>
     </release>
+    <release version="1.5.1" date="2026-03-28">
+      <description translate="no">
+        <p>What's New</p>
+        <ul>
+          <li>Added automatic location support backed by GeoClue.</li>
+          <li>Added GNOME Shell weather integration for native packages.</li>
+          <li>Added background weather refresh support for native packages.</li>
+          <li>Improved location selection and preferences workflows.</li>
+        </ul>
+
+        <p>Packaging</p>
+        <ul>
+          <li>Adjusted Flatpak builds to disable native-only shell and background integration paths cleanly.</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.5.0" date="2026-03-23">
       <description translate="no">
         <p>What's New</p>
