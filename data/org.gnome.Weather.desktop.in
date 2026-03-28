@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Mousam
-Exec=mousam
+Exec=gapplication launch io.github.amit9838.mousam
 Comment=Weather at a glance
 Icon=io.github.amit9838.mousam
 Terminal=false
