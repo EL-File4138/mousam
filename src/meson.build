@@ -16,6 +16,7 @@ conf.set('PYTHON', python.find_installation('python3').full_path())
 conf.set('VERSION', meson.project_version())
 conf.set('localedir', join_paths(get_option('prefix'), get_option('localedir')))
 conf.set('pkgdatadir', pkgdatadir)
+is_flatpak = get_option('flatpak')
 
 configure_file(
   input: 'mousam.in',
@@ -26,14 +27,16 @@ configure_file(
   install_mode: 'rwxr-xr-x'
 )
 
-configure_file(
-  input: 'background_service.in',
-  output: 'io.github.amit9838.mousam.BackgroundService',
-  configuration: conf,
-  install: true,
-  install_dir: get_option('bindir'),
-  install_mode: 'rwxr-xr-x'
-)
+if not is_flatpak
+  configure_file(
+    input: 'background_service.in',
+    output: 'io.github.amit9838.mousam.BackgroundService',
+    configuration: conf,
+    install: true,
+    install_dir: get_option('bindir'),
+    install_mode: 'rwxr-xr-x'
+  )
+endif
 
 mousam_sources = [
   'background_main.py',

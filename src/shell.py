@@ -43,6 +43,9 @@ class ShellIntegrationExporter:
 
         self.interface_info = self.node_info.interfaces[0]
     def export(self, connection: Gio.DBusConnection, object_path: str = BUS_PATH):
+        if self.settings.IS_FLATPAK:
+            return
+
         if self.registration_id is not None:
             return
 
@@ -149,10 +152,18 @@ class ShellIntegrationExporter:
             return None
 
     def _get_shell_settings(self):
-        try:
-            return Gio.Settings.new("org.gnome.shell.weather")
-        except Exception:
+        if self.settings.IS_FLATPAK:
             return None
+
+        schema_source = Gio.SettingsSchemaSource.get_default()
+        if schema_source is None:
+            return None
+
+        schema = schema_source.lookup("org.gnome.shell.weather", True)
+        if schema is None:
+            return None
+
+        return Gio.Settings.new_full(schema, None, None)
 
     def _to_variant(self, value):
         if isinstance(value, bool):

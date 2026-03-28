@@ -300,6 +300,17 @@ class WeatherPreferences(Adw.PreferencesWindow):
         self._auto_refresh_row.set_selected(selected_idx)
         self._update_background_refresh_sensitivity()
 
+        native_available = not settings.IS_FLATPAK
+        self._shell_integration_switch.set_active(
+            settings.shell_integration_enabled and native_available
+        )
+        self._shell_integration_switch.set_sensitive(native_available)
+        self._background_refresh_switch.set_active(
+            settings.background_refresh_enabled and native_available
+        )
+        if not native_available:
+            self._background_refresh_row.set_subtitle(_("Unavailable in Flatpak builds"))
+
     def _on_dynamic_bg_toggled(self, _switch: Gtk.Switch, state: bool) -> None:
         settings.is_using_dynamic_bg = state
         self._start_refresh_thread()
@@ -350,18 +361,26 @@ class WeatherPreferences(Adw.PreferencesWindow):
         self.add_toast(create_toast(message, 1))
 
     def _on_shell_integration_changed(self, _switch: Gtk.Switch, state: bool) -> bool:
+        if settings.IS_FLATPAK:
+            return True
         settings.shell_integration_enabled = state
         message = _("GNOME Shell integration enabled") if state else _("GNOME Shell integration disabled")
         self.add_toast(create_toast(message, 1))
         return False
 
     def _on_background_refresh_changed(self, _switch: Gtk.Switch, state: bool) -> bool:
+        if settings.IS_FLATPAK:
+            return True
         settings.background_refresh_enabled = state
         message = _("Background refresh enabled") if state else _("Background refresh disabled")
         self.add_toast(create_toast(message, 1))
         return False
 
     def _update_background_refresh_sensitivity(self) -> None:
+        if settings.IS_FLATPAK:
+            self._background_refresh_row.set_sensitive(False)
+            self._background_refresh_switch.set_sensitive(False)
+            return
         enabled = settings.auto_refresh_interval > 0
         self._background_refresh_row.set_sensitive(enabled)
         self._background_refresh_switch.set_sensitive(enabled)

@@ -142,6 +142,9 @@ class WeatherApplication(Adw.Application):
 
     def do_dbus_register(self, connection, object_path):
         registered = Adw.Application.do_dbus_register(self, connection, object_path)
+        if settings.IS_FLATPAK:
+            return registered
+
         self.shell_exporter.export(connection, BUS_PATH)
         self.shell_compat_exporter.export(connection, GNOME_WEATHER_BUS_PATH)
         result = connection.call_sync(
@@ -159,6 +162,10 @@ class WeatherApplication(Adw.Application):
         return registered
 
     def do_dbus_unregister(self, connection, object_path):
+        if settings.IS_FLATPAK:
+            Adw.Application.do_dbus_unregister(self, connection, object_path)
+            return
+
         self.shell_exporter.unexport()
         self.shell_compat_exporter.unexport()
         if self.compat_name_owned:

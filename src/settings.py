@@ -1,9 +1,12 @@
+import os
+
 from gi.repository import Gio
 
 
 class Settings:
     _instance = None
     APP_ID = "io.github.amit9838.mousam"
+    IS_FLATPAK = os.path.exists("/.flatpak-info")
 
     def __new__(cls):
         if cls._instance is None:
