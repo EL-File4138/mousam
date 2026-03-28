@@ -47,5 +47,30 @@
       <summary>Measurement system to use - metric,imperial</summary>
       <description>metric(km, °C), imperial(mile, °F)</description>
     </key>
+    <key name="automatic-location" type="b">
+      <default>false</default>
+      <summary>Use automatic location</summary>
+      <description>Enable GeoClue-backed automatic location selection when available.</description>
+    </key>
+    <key name="current-location" type="s">
+      <default>""</default>
+      <summary>Cached automatic location</summary>
+      <description>Stores the current GeoClue-derived location payload as JSON.</description>
+    </key>
+    <key name="background-refresh-enabled" type="b">
+      <default>true</default>
+      <summary>Enable background refresh</summary>
+      <description>Allow a background service to refresh weather data when the window is closed.</description>
+    </key>
+    <key name="last-refresh-timestamp" type="x">
+      <default>int64 0</default>
+      <summary>Last refresh timestamp</summary>
+      <description>Unix timestamp for the most recent successful or failed refresh attempt.</description>
+    </key>
+    <key name="last-refresh-status" type="s">
+      <default>"idle"</default>
+      <summary>Last refresh status</summary>
+      <description>Tracks refresh lifecycle for UI and service consumers.</description>
+    </key>
 	</schema>
 </schemalist>

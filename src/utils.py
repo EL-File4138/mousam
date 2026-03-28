@@ -3,6 +3,7 @@ import datetime
 import time
 import json
 import gi
+from .CORE_locationModel import LocationModel
 from .config import settings
 import requests
 from typing import List, Optional
@@ -86,18 +87,17 @@ def create_toast(text, priority=0):
 
 
 def get_cords():
-    selected_city_ = settings.selected_city
-    return [float(x) for x in selected_city_.split(",")]
+    location = LocationModel(settings).get_selected_location()
+    if location is None:
+        return [0.0, 0.0]
+    return [location.latitude, location.longitude]
 
 
 def get_timezone_from_selected_city():
-    added_cities = JsonProcessor.str_list_to_json(settings.added_cities)
-    for city in added_cities:
-        if settings.selected_city == f"{city.get("latitude")},{city.get("longitude")}":
-            tz = city.get("timezone", DEFAULT_TIMEZONE)
-            return tz if tz else DEFAULT_TIMEZONE
-
-    return DEFAULT_TIMEZONE
+    location = LocationModel(settings).get_selected_location()
+    if location is None:
+        return DEFAULT_TIMEZONE
+    return location.timezone or DEFAULT_TIMEZONE
 
 
 def get_time_difference(timezone_str: str = "", force=False):

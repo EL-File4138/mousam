@@ -4,6 +4,7 @@ import threading
 from gi.repository import Gtk, Adw, GLib
 from .utils import create_toast
 from .config import settings
+from .CORE_locationModel import AUTO_LOCATION_ID, LocationModel
 from gettext import gettext as _, pgettext as C_
 
 gi.require_version("Gtk", "4.0")
@@ -170,6 +171,47 @@ class WeatherPreferences(Adw.PreferencesWindow):
         self.auto_refresh_row.connect("notify::selected", self._on_auto_refresh_changed)
         self.auto_refresh_group.add(self.auto_refresh_row)
 
+        shell_group = Adw.PreferencesGroup.new()
+        shell_group.set_title(_("Shell Integration"))
+        shell_group.set_margin_top(20)
+        appearance_page.add(shell_group)
+
+        automatic_location_row = Adw.ActionRow.new()
+        automatic_location_row.set_title(_("Automatic Location"))
+        automatic_location_row.set_subtitle(
+            _("Use your current location for Shell integration and refreshes")
+        )
+        automatic_location_row.set_activatable(True)
+        automatic_location_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER
+        )
+        self.automatic_location_switch = Gtk.Switch()
+        self.automatic_location_switch.set_active(settings.automatic_location)
+        self.automatic_location_switch.connect(
+            "state-set", self._on_automatic_location_changed
+        )
+        automatic_location_box.append(self.automatic_location_switch)
+        automatic_location_row.add_suffix(automatic_location_box)
+        shell_group.add(automatic_location_row)
+
+        background_refresh_row = Adw.ActionRow.new()
+        background_refresh_row.set_title(_("Background Refresh"))
+        background_refresh_row.set_subtitle(
+            _("Refresh weather in the background when the main window is closed")
+        )
+        background_refresh_row.set_activatable(True)
+        background_refresh_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER
+        )
+        self.background_refresh_switch = Gtk.Switch()
+        self.background_refresh_switch.set_active(settings.background_refresh_enabled)
+        self.background_refresh_switch.connect(
+            "state-set", self._on_background_refresh_changed
+        )
+        background_refresh_box.append(self.background_refresh_switch)
+        background_refresh_row.add_suffix(background_refresh_box)
+        shell_group.add(background_refresh_row)
+
         # =============== Data Management Group ===============
         self.data_group = Adw.PreferencesGroup.new()
         self.data_group.set_title(_("Data Management"))
@@ -234,6 +276,24 @@ class WeatherPreferences(Adw.PreferencesWindow):
         if auto_refresh_interval > 0:
             message = _("Auto refresh every {} min").format(auto_refresh_interval)
 
+        self.add_toast(create_toast(message, 1))
+
+    def _on_automatic_location_changed(self, _widget, state):
+        location_model = LocationModel(settings)
+        settings.automatic_location = state
+
+        if not state and settings.selected_city in ("", AUTO_LOCATION_ID):
+            location = location_model.get_primary_manual_location()
+            if location is not None:
+                settings.selected_city = location.coords_key
+
+        self.application._start_data_refresh()
+        message = _("Automatic location enabled") if state else _("Automatic location disabled")
+        self.add_toast(create_toast(message, 1))
+
+    def _on_background_refresh_changed(self, _widget, state):
+        settings.background_refresh_enabled = state
+        message = _("Background refresh enabled") if state else _("Background refresh disabled")
         self.add_toast(create_toast(message, 1))
 
     def _on_reset_clicked(self, button):
