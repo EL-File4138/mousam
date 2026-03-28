@@ -29,7 +29,30 @@ class WeatherPreferences(Adw.PreferencesWindow):
         self.add(appearance_page)
 
         self.appearance_grp = Adw.PreferencesGroup()
+
+        self.location_group = Adw.PreferencesGroup.new()
+        self.location_group.set_title(_("Location"))
+        appearance_page.add(self.location_group)
+
         appearance_page.add(self.appearance_grp)
+
+        automatic_location_row = Adw.ActionRow.new()
+        automatic_location_row.set_title(_("Automatic Location"))
+        automatic_location_row.set_subtitle(
+            _("Use your current location when a current-location entry is selected")
+        )
+        automatic_location_row.set_activatable(True)
+        automatic_location_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER
+        )
+        self.automatic_location_switch = Gtk.Switch()
+        self.automatic_location_switch.set_active(settings.automatic_location)
+        self.automatic_location_switch.connect(
+            "state-set", self._on_automatic_location_changed
+        )
+        automatic_location_box.append(self.automatic_location_switch)
+        automatic_location_row.add_suffix(automatic_location_box)
+        self.location_group.add(automatic_location_row)
 
         # Dynamic Background
         gradient_row = Adw.ActionRow.new()
@@ -139,6 +162,7 @@ class WeatherPreferences(Adw.PreferencesWindow):
 
         # Auto Refresh
         self.auto_refresh_group = Adw.PreferencesGroup.new()
+        self.auto_refresh_group.set_title(_("Refresh and Integration"))
         self.auto_refresh_group.set_margin_top(20)
         appearance_page.add(self.auto_refresh_group)
 
@@ -171,28 +195,23 @@ class WeatherPreferences(Adw.PreferencesWindow):
         self.auto_refresh_row.connect("notify::selected", self._on_auto_refresh_changed)
         self.auto_refresh_group.add(self.auto_refresh_row)
 
-        shell_group = Adw.PreferencesGroup.new()
-        shell_group.set_title(_("Shell Integration"))
-        shell_group.set_margin_top(20)
-        appearance_page.add(shell_group)
-
-        automatic_location_row = Adw.ActionRow.new()
-        automatic_location_row.set_title(_("Automatic Location"))
-        automatic_location_row.set_subtitle(
-            _("Use your current location for Shell integration and refreshes")
+        shell_integration_row = Adw.ActionRow.new()
+        shell_integration_row.set_title(_("GNOME Shell Integration"))
+        shell_integration_row.set_subtitle(
+            _("Show the selected location in the GNOME Shell weather section")
         )
-        automatic_location_row.set_activatable(True)
-        automatic_location_box = Gtk.Box(
+        shell_integration_row.set_activatable(True)
+        shell_integration_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL, valign=Gtk.Align.CENTER
         )
-        self.automatic_location_switch = Gtk.Switch()
-        self.automatic_location_switch.set_active(settings.automatic_location)
-        self.automatic_location_switch.connect(
-            "state-set", self._on_automatic_location_changed
+        self.shell_integration_switch = Gtk.Switch()
+        self.shell_integration_switch.set_active(settings.shell_integration_enabled)
+        self.shell_integration_switch.connect(
+            "state-set", self._on_shell_integration_changed
         )
-        automatic_location_box.append(self.automatic_location_switch)
-        automatic_location_row.add_suffix(automatic_location_box)
-        shell_group.add(automatic_location_row)
+        shell_integration_box.append(self.shell_integration_switch)
+        shell_integration_row.add_suffix(shell_integration_box)
+        self.auto_refresh_group.add(shell_integration_row)
 
         background_refresh_row = Adw.ActionRow.new()
         background_refresh_row.set_title(_("Background Refresh"))
@@ -210,7 +229,9 @@ class WeatherPreferences(Adw.PreferencesWindow):
         )
         background_refresh_box.append(self.background_refresh_switch)
         background_refresh_row.add_suffix(background_refresh_box)
-        shell_group.add(background_refresh_row)
+        self.background_refresh_row = background_refresh_row
+        self.auto_refresh_group.add(background_refresh_row)
+        self._update_background_refresh_sensitivity()
 
         # =============== Data Management Group ===============
         self.data_group = Adw.PreferencesGroup.new()
@@ -272,6 +293,12 @@ class WeatherPreferences(Adw.PreferencesWindow):
         auto_refresh_interval = self.auto_refresh_intervals[index]
         settings.auto_refresh_interval = auto_refresh_interval
 
+        if auto_refresh_interval <= 0:
+            settings.background_refresh_enabled = False
+            self.background_refresh_switch.set_active(False)
+
+        self._update_background_refresh_sensitivity()
+
         message = _("Auto refresh disabled")
         if auto_refresh_interval > 0:
             message = _("Auto refresh every {} min").format(auto_refresh_interval)
@@ -295,6 +322,16 @@ class WeatherPreferences(Adw.PreferencesWindow):
         settings.background_refresh_enabled = state
         message = _("Background refresh enabled") if state else _("Background refresh disabled")
         self.add_toast(create_toast(message, 1))
+
+    def _on_shell_integration_changed(self, _widget, state):
+        settings.shell_integration_enabled = state
+        message = _("GNOME Shell integration enabled") if state else _("GNOME Shell integration disabled")
+        self.add_toast(create_toast(message, 1))
+
+    def _update_background_refresh_sensitivity(self):
+        enabled = settings.auto_refresh_interval > 0
+        self.background_refresh_row.set_sensitive(enabled)
+        self.background_refresh_switch.set_sensitive(enabled)
 
     def _on_reset_clicked(self, button):
         dialog = Adw.MessageDialog.new(
@@ -326,6 +363,10 @@ class WeatherPreferences(Adw.PreferencesWindow):
         self.gradient_switch.set_active(settings.is_using_dynamic_bg)
         self.use_inch_switch.set_active(settings.is_using_inch_for_prec)
         self.auto_refresh_row.set_selected(0)
+        self.automatic_location_switch.set_active(settings.automatic_location)
+        self.shell_integration_switch.set_active(settings.shell_integration_enabled)
+        self.background_refresh_switch.set_active(settings.background_refresh_enabled)
+        self._update_background_refresh_sensitivity()
 
         if settings.unit == "metric":
             self.metric_check_btn.set_active(True)

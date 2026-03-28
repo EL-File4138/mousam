@@ -62,6 +62,11 @@
       <summary>Enable background refresh</summary>
       <description>Allow a background service to refresh weather data when the window is closed.</description>
     </key>
+    <key name="shell-integration-enabled" type="b">
+      <default>true</default>
+      <summary>Enable GNOME Shell integration</summary>
+      <description>Expose Mousam weather locations to the GNOME Shell weather section.</description>
+    </key>
     <key name="last-refresh-timestamp" type="x">
       <default>int64 0</default>
       <summary>Last refresh timestamp</summary>
