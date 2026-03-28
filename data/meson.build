@@ -33,10 +33,10 @@ endif
 
 appstream_file = i18n.merge_file(
         input: 'io.github.amit9838.mousam.appdata.xml.in',
-       output: 'io.github.amit9838.mousam.appdata.xml',
-       po_dir: '../po',
-      install: true,
-  install_dir: join_paths(get_option('datadir'), 'appdata')
+       output: 'io.github.amit9838.mousam.metainfo.xml',
+        po_dir: '../po',
+       install: true,
+  install_dir: join_paths(get_option('datadir'), 'metainfo')
 )
 
 appstream_util = find_program('appstream-util', required: false)

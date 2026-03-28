@@ -13,6 +13,16 @@
 <img src="https://raw.githubusercontent.com/amit9838/mousam/master/screenshots/ss1.png?raw=true#gh-light-mode-only">
 </div>
 
+## Fork Warning
+
+This repository is a personal fork of the upstream `amit9838/mousam` project.
+
+It contains GNOME Shell compatibility changes that intentionally hook into GNOME Weather's internal integration contract. That behavior effectively impersonates `org.gnome.Weather`, relies on internal APIs that are not meant for third-party applications, and may reasonably be viewed as invasive or malicious by users, distributors, or desktop environments.
+
+Additionally, it included some integrations that are specific for GNOME, which makes it deviates from the original project goals to be DE neutral, and may not be desired if used with other desktop environments.
+
+This fork is for personal experimentation only. If you choose to build, install, or distribute it, please proceed with caution and review the changes carefully.
+
 ## Features
 
 - Displays real-time temperature, humidity, wind speed, UV index, pressure and more
