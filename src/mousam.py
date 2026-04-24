@@ -8,7 +8,7 @@ from gi.repository import Gtk, Adw, Gio, GLib
 from gettext import gettext as _, pgettext as C_
 
 # Module imports
-from .utils import create_toast
+from .utils import AutoRefreshTimer, local_time_data
 from .constants import bg_css
 from .windowAbout import AboutWindow
 from .windowPreferences import WeatherPreferences
@@ -24,6 +24,7 @@ from .UI_Forecast import Forecast
 from .UI_CardSquare import CardSquare
 from .UI_CardDayNight import CardDayNight
 from .UI_CardAirPollution import CardAirPollution
+from .UI_CompactWeather import CompactWeatherWindow
 
 from .config import settings
 from .CORE_refreshService import WeatherRefreshService
@@ -40,10 +41,10 @@ class WeatherMainWindow(Adw.ApplicationWindow):
 
         # State Tracking
         self.added_cities= settings.added_cities
-        self._auto_refresh_timer_id = None
         self.location_model = LocationModel(settings)
         self.refresh_service = WeatherRefreshService(settings)
         self.current_location_controller = None
+        self.auto_refresh = AutoRefreshTimer(self._on_auto_refresh_tick)
 
         # --- UI Construction ---
         self._setup_actions()
@@ -56,10 +57,10 @@ class WeatherMainWindow(Adw.ApplicationWindow):
         self._start_data_refresh(is_initial=True)
 
         # Auto-refresh setup
-        self._setup_auto_refresh()
+        self.auto_refresh.setup()
         settings.settings.connect(
             "changed::auto-refresh-interval",
-            lambda *_: self._setup_auto_refresh(),
+            lambda *_: self.auto_refresh.setup(),
         )
         settings.settings.connect(
             "changed::automatic-location",
@@ -124,6 +125,12 @@ class WeatherMainWindow(Adw.ApplicationWindow):
         btn_loc.set_action_name("win.locations")
         self.header.pack_end(btn_loc)
 
+        # Compact Mode Button
+        btn_compact = Gtk.Button(icon_name="view-restore-symbolic")
+        btn_compact.set_tooltip_text(_("Compact Mode"))
+        btn_compact.set_action_name("win.compact")
+        self.header.pack_end(btn_compact)
+
     def _setup_actions(self):
         action_group = Gio.SimpleActionGroup()
         self.insert_action_group("win", action_group)
@@ -131,6 +138,7 @@ class WeatherMainWindow(Adw.ApplicationWindow):
         actions = [
             ("refresh", self._on_action_refresh, ["<Control>r"]),
             ("locations", self._on_action_locations, ["<Control>l"]),
+            ("compact", self._on_action_compact, ["<Control>m"]),
             ("preferences", self._on_action_preferences, ["<Control>comma"]),
             ("shortcuts", self._on_action_shortcuts, ["<Control>question"]),
             ("about", self._on_action_about, None),
@@ -160,8 +168,6 @@ class WeatherMainWindow(Adw.ApplicationWindow):
             self._update_view_state("welcome")
             return
 
-
-        self._update_view_state("loader")
 
         self.refresh_service.refresh_async(on_complete=self._on_refresh_complete)
 
@@ -206,28 +212,37 @@ class WeatherMainWindow(Adw.ApplicationWindow):
             self.main_stack.remove(child)
 
         # Dynamic Background
+        w_code = cw_data.weathercode.get("data")
+        is_day = cw_data.is_day.get("data")
         self._use_dynamic_bg(
-            cw_data.weathercode.get("data"), cw_data.is_day.get("data")
+            w_code if w_code is not None else 0,
+            is_day if is_day is not None else 1
         )
 
         # Main Grid Layout
         grid = Gtk.Grid()
         grid.set_margin_top(20)
-        grid.set_margin_bottom(20)
+        grid.set_margin_bottom(10)
         grid.set_margin_start(12)
         grid.set_margin_end(12)
         grid.set_hexpand(True)
 
         # --- Top Section ---
         current_clamp = Adw.Clamp(maximum_size=1400, tightening_threshold=200)
-        current_clamp.set_child(CurrentCondition())
+        curr_cond = CurrentCondition()
+        curr_cond.set_size_request(-1, 100)
+        current_clamp.set_child(curr_cond)
         grid.attach(current_clamp, 0, 0, 3, 1)
 
-        grid.attach(HourlyDetails(), 0, 1, 2, 1)
+        hourly = HourlyDetails()
+        hourly.set_size_request(-1, 180)
+        grid.attach(hourly, 0, 1, 2, 1)
 
         # --- Forecast Section ---
-        forecast_clamp = Adw.Clamp(maximum_size=800)
-        forecast_clamp.set_child(Forecast())
+        forecast_clamp = Adw.Clamp()
+        forecast = Forecast()
+        # forecast.set_size_request(-1, 500)
+        forecast_clamp.set_child(forecast)
         grid.attach(forecast_clamp, 2, 1, 1, 2)
 
         # --- Small Widgets Grid ---
@@ -235,6 +250,7 @@ class WeatherMainWindow(Adw.ApplicationWindow):
         grid.attach(widget_grid, 1, 2, 1, 1)
 
         def add_card(widget, col, row, width=1):
+            # widget.set_size_request(-1, 120)
             widget_grid.attach(widget, col, row, width, 1)
 
         # Wind
@@ -319,9 +335,8 @@ class WeatherMainWindow(Adw.ApplicationWindow):
         self.main_stack.set_visible_child_name(state)
 
     def _create_loader_page(self):
-        spinner = Gtk.Spinner()
+        spinner = Adw.Spinner()
         spinner.set_size_request(64, 64)
-        spinner.start()
         page = Adw.StatusPage()
         page.set_title(_("Getting Weather Data"))
         page.set_child(spinner)
@@ -346,32 +361,53 @@ class WeatherMainWindow(Adw.ApplicationWindow):
         page.set_title(title)
         return page
 
-    def _use_dynamic_bg(self, weather_code: int = 0, is_day: int = 1):
-        if not settings.is_using_dynamic_bg:
-            return
+    def _use_dynamic_bg(self, weather_code: int = 0, is_day: int = 1) -> None:
+        # Always required classes
+        required = {"background", "csd", "dynamic-bg"}
 
-        for cl in self.get_css_classes():
-            if cl not in ["backgrounds", "csd"]: self.remove_css_class(cl)
+        # Add weather class if dynamic backgrounds are on
+        if settings.is_using_dynamic_bg:
+            key = f"{weather_code}{'' if is_day else 'n'}"
+            if weather_cls := bg_css.get(key):
+                required.add(weather_cls)
 
-        code_key = str(weather_code)
-        if is_day == 0:
-            code_key += "n"
-        css_class = bg_css.get(code_key, "")
-        if css_class:
-            self.add_css_class(css_class)
+        current = set(self.get_css_classes())
+        weather_classes = set(bg_css.values())
 
-    def _setup_auto_refresh(self):
-        if self._auto_refresh_timer_id is not None:
-            GLib.source_remove(self._auto_refresh_timer_id)
-            self._auto_refresh_timer_id = None
+        # Keep all non-weather classes, but enforce the required ones
+        target = (current - weather_classes) | required
 
-        interval = settings.auto_refresh_interval
-        if interval > 0:
-            self._auto_refresh_timer_id = GLib.timeout_add_seconds(
-                interval * 60, self._on_auto_refresh_tick
-            )
+        # Sync current classes to target
+        # classes that are currently on the widget but not in the target. These need to be removed.
+        for cls in current - target:
+            self.remove_css_class(cls)
+
+        # classes that are in the target but not currently on the widget. These need to be added.
+        for cls in target - current:
+            self.add_css_class(cls)
+
+    # Removed _setup_auto_refresh, logic moved to utils.AutoRefreshTimer
+
+    def _pre_refresh_cleanup(self):
+        from .API_Weather import Weather
+        from .API_AirPollution import AirPollution
+
+        # Evict old content widget tree (weak refs in draw funcs handle GC cleanly)
+        child = self.main_stack.get_child_by_name("content")
+        if child:
+            self.main_stack.remove(child)
+
+        # Clear API response caches so the next fetch goes to network
+        Weather.current_weather.__func__.cache_clear()
+        Weather.forecast_hourly.__func__.cache_clear()
+        Weather.forecast_daily.__func__.cache_clear()
+        AirPollution.current_air_pollution.cache_clear()
+
+        # Clear timezone cache (will be repopulated during fetch)
+        local_time_data.clear()
 
     def _on_auto_refresh_tick(self):
+        self._pre_refresh_cleanup()
         self._start_data_refresh()
         return GLib.SOURCE_CONTINUE
 
@@ -388,9 +424,7 @@ class WeatherMainWindow(Adw.ApplicationWindow):
             self.current_location_controller = None
 
     def _save_window_state(self, window):
-        if self._auto_refresh_timer_id is not None:
-            GLib.source_remove(self._auto_refresh_timer_id)
-            self._auto_refresh_timer_id = None
+        self.auto_refresh.stop()
 
         width, height = window.get_default_size()
         settings.window_width = width
@@ -404,6 +438,18 @@ class WeatherMainWindow(Adw.ApplicationWindow):
     def _on_action_locations(self, action, param):
         win = WeatherLocations(self)
         win.present()
+
+    def _on_action_compact(self, action, param):
+        app = self.get_application()
+        bg_classes = self.get_css_classes()
+        compact_win = CompactWeatherWindow(app, bg_classes=bg_classes, on_back_to_normal=lambda: self._switch_to_normal(app, compact_win))
+        compact_win.present()
+        self.close()
+
+    def _switch_to_normal(self, app, compact_win):
+        main_win = WeatherMainWindow(application=app)
+        main_win.present()
+        compact_win.close()
 
     def _on_action_preferences(self, action, param):
         win = WeatherPreferences(self)

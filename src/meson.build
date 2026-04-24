@@ -65,6 +65,8 @@ mousam_sources = [
   'UI_CompDrawDayNight.py',
   'UI_CompDrawImageIcon.py',
   'UI_CompDrawPollutionBar.py',
+  'UI_CompDrawLineGraph.py',
+  'UI_CompactWeather.py',
 
   'constants.py',
   'utils.py',
