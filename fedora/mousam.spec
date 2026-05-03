@@ -1,7 +1,7 @@
 %global forgeurl https://github.com/EL-File4138/mousam
 
 Name:           mousam
-Version:        1.5.1
+Version:        2.0.2
 Release:        1%{?dist}
 Summary:        GTK weather application
 
