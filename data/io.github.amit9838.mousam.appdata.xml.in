@@ -22,16 +22,8 @@
   </description>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/amit9838/mousam/master/screenshots/ss1.png</image>
-      <caption>Main dashboard showing current weather and hourly forecast</caption>
-    </screenshot>
-    <screenshot>
-      <image>https://raw.githubusercontent.com/amit9838/mousam/master/screenshots/ss2.png</image>
-      <caption>Detailed weather conditions during rain</caption>
-    </screenshot>
-    <screenshot>
-      <image>https://raw.githubusercontent.com/amit9838/mousam/master/screenshots/ss3.png</image>
-      <caption>Night mode view</caption>
+      <image>https://raw.githubusercontent.com/amit9838/mousam/master/screenshots/compact_mode.png</image>
+      <caption>Compact weather mode</caption>
     </screenshot>
   </screenshots>
 
@@ -353,6 +345,7 @@
     </release>
     <release version="0.6.0" date="2023-07-14">
       <description translate="no">
+        <p>Release highlights</p>
         <ul>
           <li>Adds air-pollution info</li>
           <li>Adds Snowfall summary</li>
@@ -365,6 +358,7 @@
     </release>
     <release version="0.5.0" date="2023-07-05">
       <description translate="no">
+        <p>Release highlights</p>
         <ul>
           <li>Adds sunset/sunrise info</li>
           <li>Add and remove city more quickly</li>
@@ -376,6 +370,7 @@
     </release>
     <release version="0.4.0" date="2023-06-25">
       <description translate="no">
+        <p>Release highlights</p>
         <ul>
           <li>Adds 5 days forecast</li>
           <li>Adds rain summary (rain quantity)</li>
@@ -387,6 +382,7 @@
     </release>
     <release version="0.3.0" date="2023-06-22">
       <description translate="no">
+        <p>Release highlights</p>
         <ul>
           <li>Show today and tomorrow forecasts</li>
           <li>Option:Use Imerial, Metric systems</li>
@@ -402,6 +398,7 @@
     </release>
     <release version="0.2.1" date="2023-06-18">
       <description translate="no">
+        <p>Release highlights</p>
         <ul>
           <li>Use full country name.</li>
           <li>Fix units.</li>
