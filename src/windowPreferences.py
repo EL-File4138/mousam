@@ -1,21 +1,22 @@
 import threading
-
 import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gettext import gettext as _, pgettext as C_
 from gi.repository import Adw, Gtk
+from gettext import gettext as _, pgettext as C_
 
+from .settings import settings
 from .CORE_Helpers import create_toast
+from .configs import AUTO_REFRESH_OPTIONS
 from .CORE_Logging import log_manager
 from .CORE_locationModel import AUTO_LOCATION_ID, LocationModel
-from .configs import AUTO_REFRESH_OPTIONS
-from .settings import settings
 
 
 class WeatherPreferences(Adw.PreferencesWindow):
+    """Preferences window for weather application."""
+
     def __init__(self, application: Adw.Application, **kwargs):
         super().__init__(**kwargs)
         self.application = application
@@ -73,6 +74,7 @@ class WeatherPreferences(Adw.PreferencesWindow):
             activatable=True,
         )
         switch = Gtk.Switch(valign=Gtk.Align.CENTER)
+        switch.set_active(settings.automatic_location)
         switch.connect("state-set", self._on_automatic_location_changed)
         row.add_suffix(switch)
         self._automatic_location_switch = switch
@@ -113,6 +115,7 @@ class WeatherPreferences(Adw.PreferencesWindow):
         )
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         button_box.add_css_class("linked")
+        button_box.set_margin_start(2)
         button_box.set_valign(Gtk.Align.CENTER)
         row.add_suffix(button_box)
 
@@ -147,6 +150,7 @@ class WeatherPreferences(Adw.PreferencesWindow):
         )
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         button_box.add_css_class("linked")
+        button_box.set_margin_start(2)
         button_box.set_valign(Gtk.Align.CENTER)
 
         btn_metric = Gtk.ToggleButton.new_with_label(_("Metric"))
@@ -180,7 +184,7 @@ class WeatherPreferences(Adw.PreferencesWindow):
         group.add(prec_row)
 
     def _add_auto_refresh_row(self, parent: Adw.PreferencesGroup) -> None:
-        labels = Gtk.StringList.new([label for _value, label in AUTO_REFRESH_OPTIONS])
+        labels = Gtk.StringList.new([opt[1] for opt in AUTO_REFRESH_OPTIONS])
         row = Adw.ComboRow(
             title=_("Auto Refresh"),
             subtitle=_("Automatically refresh weather data at a set interval"),
@@ -201,6 +205,7 @@ class WeatherPreferences(Adw.PreferencesWindow):
         switch = Gtk.Switch(valign=Gtk.Align.CENTER)
         switch.connect("state-set", self._on_shell_integration_changed)
         row.add_suffix(switch)
+        self._shell_integration_row = row
         self._shell_integration_switch = switch
         parent.add(row)
 
@@ -279,8 +284,6 @@ class WeatherPreferences(Adw.PreferencesWindow):
         self._notification_switch.set_active(settings.show_notifications)
         self._precip_switch.set_active(settings.is_using_inch_for_prec)
         self._debug_switch.set_active(settings.debug_mode)
-        self._shell_integration_switch.set_active(settings.shell_integration_enabled)
-        self._background_refresh_switch.set_active(settings.background_refresh_enabled)
 
         if settings.is_using_24h_clock:
             self._time_btn_24h.set_active(True)
@@ -298,18 +301,20 @@ class WeatherPreferences(Adw.PreferencesWindow):
                 selected_idx = i
                 break
         self._auto_refresh_row.set_selected(selected_idx)
-        self._update_background_refresh_sensitivity()
 
         native_available = not settings.IS_FLATPAK
         self._shell_integration_switch.set_active(
             settings.shell_integration_enabled and native_available
         )
+        self._shell_integration_row.set_sensitive(native_available)
         self._shell_integration_switch.set_sensitive(native_available)
         self._background_refresh_switch.set_active(
             settings.background_refresh_enabled and native_available
         )
         if not native_available:
+            self._shell_integration_row.set_subtitle(_("Unavailable in Flatpak builds"))
             self._background_refresh_row.set_subtitle(_("Unavailable in Flatpak builds"))
+        self._update_background_refresh_sensitivity()
 
     def _on_dynamic_bg_toggled(self, _switch: Gtk.Switch, state: bool) -> None:
         settings.is_using_dynamic_bg = state
@@ -377,11 +382,7 @@ class WeatherPreferences(Adw.PreferencesWindow):
         return False
 
     def _update_background_refresh_sensitivity(self) -> None:
-        if settings.IS_FLATPAK:
-            self._background_refresh_row.set_sensitive(False)
-            self._background_refresh_switch.set_sensitive(False)
-            return
-        enabled = settings.auto_refresh_interval > 0
+        enabled = (not settings.IS_FLATPAK) and settings.auto_refresh_interval > 0
         self._background_refresh_row.set_sensitive(enabled)
         self._background_refresh_switch.set_sensitive(enabled)
 

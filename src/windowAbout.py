@@ -24,5 +24,4 @@ def show_about_window(parent_window: Gtk.Window = None) -> None:
         translator_credits=_("translator-credits"),
     )
 
-
     about.present()

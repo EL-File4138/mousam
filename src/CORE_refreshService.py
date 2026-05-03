@@ -9,12 +9,7 @@ except ImportError:
     GLib = None
 
 from .CORE_locationModel import LocationModel, WeatherLocation
-from .CORE_weatherData import (
-    fetch_current_air_pollution,
-    fetch_current_weather,
-    fetch_daily_forecast,
-    fetch_hourly_forecast,
-)
+from .CORE_weatherData import weather_manager
 from .settings import settings
 from .CORE_Helpers import check_internet_connection, get_time_difference
 
@@ -48,10 +43,11 @@ class WeatherRefreshService:
             return RefreshResult(False, "no-internet", location=location)
 
         try:
-            fetch_current_weather()
-            fetch_hourly_forecast()
-            fetch_daily_forecast()
-            fetch_current_air_pollution()
+            weather_manager.clear()
+            weather_manager.update_current_weather()
+            weather_manager.update_hourly_forecast()
+            weather_manager.update_daily_forecast()
+            weather_manager.update_air_pollution()
             get_time_difference(location.timezone, True)
             self._set_refresh_state("ok")
             return RefreshResult(True, "ok", location=location)

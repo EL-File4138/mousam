@@ -47,9 +47,9 @@ mousam_sources = [
   'CORE_locationModel.py',
   'CORE_refreshService.py',
   'CORE_weatherData.py',
+  'shell.py',
   'CORE_Icons.py',
   'CORE_Logging.py',
-  'shell.py',
 
   'API_AirPollution.py',
   'API_FindCity.py',

@@ -8,7 +8,6 @@ VERSION = "2.0.2"
 TIMEOUT = 15
 INTERNET_CACHE_TTL = 120
 DEFAULT_TIMEZONE = "UTC"
-GEONAMES_USERNAME = "mousam"
 
 # Domain to check internet connectivity as fallback
 DOMAINS = {
@@ -21,6 +20,7 @@ DOMAINS = {
 OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast"
 AIR_QUALITY_BASE_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 GEOCODING_BASE_URL = "https://geocoding-api.open-meteo.com/v1/search"
+GEONAMES_USERNAME = "mousam"
 
 # --- Cache Settings ---
 DATA_CACHE_TTL = 60

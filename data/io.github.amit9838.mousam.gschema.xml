@@ -47,16 +47,6 @@
       <summary>Measurement system to use - metric,imperial</summary>
       <description>metric(km, °C), imperial(mile, °F)</description>
     </key>
-    <key name="show-notifications" type="b">
-      <default>false</default>
-      <summary>Show weather update notifications</summary>
-      <description>Show a notification when weather data is updated.</description>
-    </key>
-    <key name="debug-mode" type="b">
-      <default>false</default>
-      <summary>Enable debug mode</summary>
-      <description>Enables detailed logging and console output.</description>
-    </key>
     <key name="automatic-location" type="b">
       <default>false</default>
       <summary>Use automatic location</summary>
@@ -87,5 +77,15 @@
       <summary>Last refresh status</summary>
       <description>Tracks refresh lifecycle for UI and service consumers.</description>
     </key>
-	</schema>
+    <key name="show-notifications" type="b">
+      <default>false</default>
+      <summary>Show weather update notifications</summary>
+      <description>Show a notification when weather data is updated.</description>
+    </key>
+    <key name="debug-mode" type="b">
+      <default>false</default>
+      <summary>Enable debug mode</summary>
+      <description>Enables detailed logging and console output.</description>
+    </key>
+  </schema>
 </schemalist>

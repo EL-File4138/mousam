@@ -10,7 +10,6 @@ from .settings import settings
 from gettext import gettext as _
 from .configs import TIMEOUT, INTERNET_CACHE_TTL, DEFAULT_TIMEZONE, DOMAINS
 from .CORE_Logging import get_logger
-from .CORE_locationModel import LocationModel
 
 logger = get_logger("helpers")
 
@@ -54,6 +53,8 @@ def create_toast(text, priority=0):
     return toast
 
 def get_cords():
+    from .CORE_locationModel import LocationModel
+
     location = LocationModel(settings).get_selected_location()
     if location is None:
         return [0.0, 0.0]
@@ -69,6 +70,8 @@ class JsonProcessor:
         return [json.dumps(item) for item in data]
 
 def get_timezone_from_selected_city():
+    from .CORE_locationModel import LocationModel
+
     location = LocationModel(settings).get_selected_location()
     if location is None:
         return DEFAULT_TIMEZONE
@@ -97,14 +100,9 @@ def get_time_difference(timezone_str: str = "", force=False):
         return {"error": f"Invalid timezone: {str(e)}"}
 
 def get_selected_city_name():
-    try:
-        lat, lon = get_cords()
-        added_cities = JsonProcessor.str_list_to_json(settings.added_cities)
-        for city in added_cities:
-            c_lat = float(city.get('latitude', 0))
-            c_lon = float(city.get('longitude', 0))
-            if abs(lat - c_lat) < 0.001 and abs(lon - c_lon) < 0.001:
-                return city.get("name", _("Unknown City"))
-    except:
-        pass
-    return _("Unknown City")
+    from .CORE_locationModel import LocationModel
+
+    location = LocationModel(settings).get_selected_location()
+    if location is None:
+        return _("Unknown City")
+    return location.name or _("Unknown City")

@@ -434,13 +434,13 @@ class WeatherMainWindow(Adw.ApplicationWindow):
             key = f"{weather_code}{'' if is_day else 'n'}"
             if weather_cls := bg_css.get(key):
                 required.add(weather_cls)
-        
+
         current = set(self.get_css_classes())
         weather_classes = set(bg_css.values())
-        
+
         # Keep all non-weather classes, but enforce the required ones
         target = (current - weather_classes) | required
-        
+
         # Sync current classes to target
         # classes that are currently on the widget but not in the target. These need to be removed.
         for cls in current - target:

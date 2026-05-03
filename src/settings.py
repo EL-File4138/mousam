@@ -111,22 +111,6 @@ class Settings:
         self.settings.set_string("unit", value)
 
     @property
-    def show_notifications(self):
-        return self.settings.get_boolean("show-notifications")
-
-    @show_notifications.setter
-    def show_notifications(self, value):
-        self.settings.set_boolean("show-notifications", value)
-
-    @property
-    def debug_mode(self):
-        return self.settings.get_boolean("debug-mode")
-
-    @debug_mode.setter
-    def debug_mode(self, value):
-        self.settings.set_boolean("debug-mode", value)
-
-    @property
     def automatic_location(self):
         return self.settings.get_boolean("automatic-location")
 
@@ -173,6 +157,22 @@ class Settings:
     @shell_integration_enabled.setter
     def shell_integration_enabled(self, value):
         self.settings.set_boolean("shell-integration-enabled", value)
+
+    @property
+    def show_notifications(self):
+        return self.settings.get_boolean("show-notifications")
+
+    @show_notifications.setter
+    def show_notifications(self, value):
+        self.settings.set_boolean("show-notifications", value)
+
+    @property
+    def debug_mode(self):
+        return self.settings.get_boolean("debug-mode")
+
+    @debug_mode.setter
+    def debug_mode(self, value):
+        self.settings.set_boolean("debug-mode", value)
 
 
 def get_settings():
